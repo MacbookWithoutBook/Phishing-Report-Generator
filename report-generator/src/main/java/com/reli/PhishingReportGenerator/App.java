@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -27,81 +28,90 @@ public class App {
     private static int count_bounced;
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        logger.info("Enter the path to the CSV file:");
-        String csvFilePath = scanner.nextLine();
-        // String csvFilePath = "Phishing-Report-Generator\\report-generator\\deleteme.csv";
-        String excelFilePath = "phishing_report.xlsx";
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(System.in);
+            logger.info("Enter the path to the CSV file:");
+            String csvFilePath = scanner.nextLine();
+            // String csvFilePath = "Phishing-Report-Generator\\report-generator\\deleteme.csv";
+            String excelFilePath = "phishing_report.xlsx";
 
-        List<Employee> clickedList = new ArrayList<>();
-        List<Employee> reportedList = new ArrayList<>();
-        List<Employee> noActionList = new ArrayList<>();
-        
+            List<Employee> clickedList = new ArrayList<>();
+            List<Employee> reportedList = new ArrayList<>();
+            List<Employee> noActionList = new ArrayList<>();
+            
 
-        try (BOMInputStream bomInputStream = new BOMInputStream(new FileInputStream(csvFilePath));
-             InputStreamReader reader = new InputStreamReader(bomInputStream)) {
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT
-                    .withHeader("First Name", "Last Name","Primary Email Opened", "Primary Clicked",
-                     "Multi Click Event", "Email Address", "Reported", "Email Bounced", "Passed?", "Phishing Template")
-                    .withFirstRecordAsHeader()
-                    .parse(reader);
+            try (BOMInputStream bomInputStream = new BOMInputStream(new FileInputStream(csvFilePath));
+                InputStreamReader reader = new InputStreamReader(bomInputStream)) {
+                Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                        .withHeader("First Name", "Last Name","Primary Email Opened", "Primary Clicked",
+                        "Multi Click Event", "Email Address", "Reported", "Email Bounced", "Passed?", "Phishing Template")
+                        .withFirstRecordAsHeader()
+                        .parse(reader);
 
-            for (CSVRecord record : records) {
-                // parse data
-                String firstname = record.get("First Name");
-                String lastname = record.get("Last Name");
-                boolean open = Boolean.parseBoolean(record.get("Primary Email Opened"));
-                boolean click = Boolean.parseBoolean(record.get("Primary Clicked"));
-                int multiClick = Integer.parseInt(record.get("Multi Click Event"));
-                String email = record.get("Email Address");
-                boolean reported = Boolean.parseBoolean(record.get("Reported"));
-                boolean bounced = Boolean.parseBoolean(record.get("Email Bounced"));
-                boolean pass = Boolean.parseBoolean(record.get("Passed?"));
-                String template = record.get("Phishing Template");
+                for (CSVRecord record : records) {
+                    // parse data
+                    String firstname = record.get("First Name");
+                    String lastname = record.get("Last Name");
+                    boolean open = Boolean.parseBoolean(record.get("Primary Email Opened"));
+                    boolean click = Boolean.parseBoolean(record.get("Primary Clicked"));
+                    int multiClick = Integer.parseInt(record.get("Multi Click Event"));
+                    String email = record.get("Email Address");
+                    boolean reported = Boolean.parseBoolean(record.get("Reported"));
+                    boolean bounced = Boolean.parseBoolean(record.get("Email Bounced"));
+                    boolean pass = Boolean.parseBoolean(record.get("Passed?"));
+                    String template = record.get("Phishing Template");
 
-                Employee employee = new Employee(firstname, lastname, email, open, click, multiClick, reported, bounced, pass, template);
-                count_sent++;
+                    Employee employee = new Employee(firstname, lastname, email, open, click, multiClick, reported, bounced, pass, template);
+                    count_sent++;
 
-                if (bounced) {
-                    count_bounced++;
-                } else {
-                    if (click) {
-                        clickedList.add(employee);
-                        count_clicked++;
-                    }
-                    if (reported) {
-                        reportedList.add(employee);
-                        count_reported++;
-                    }
-                    if (!click && !reported) {
-                        noActionList.add(employee);
-                        count_no_action++;
+                    if (bounced) {
+                        count_bounced++;
+                    } else {
+                        if (click) {
+                            clickedList.add(employee);
+                            count_clicked++;
+                        }
+                        if (reported) {
+                            reportedList.add(employee);
+                            count_reported++;
+                        }
+                        if (!click && !reported) {
+                            noActionList.add(employee);
+                            count_no_action++;
+                        }
                     }
                 }
-            }
-        } catch (IOException e) {
-            logger.error("Error reading CSV file", e);
-        }
-
-        // System.out.println("Email Sent: " + count_sent);
-        // System.out.println("Email Bounced: " + count_bounced);
-        System.out.println("Email Delivered: " + (count_sent - count_bounced));
-        System.out.println("Clicked: " + count_clicked + " (%" + String.format("%.2f", 100.0*46.0/817) + ")");
-        System.out.println("Reported: " + count_reported + " (Should manually add # of users reported via MS)");
-        System.out.println("No Action: " + count_no_action + " (Should manually subtract # of users reported via MS)");
-
-        try (Workbook workbook = new XSSFWorkbook()) {
-            createSheet(workbook, "Clicked", clickedList);
-            createSheet(workbook, "Reported", reportedList);
-            createSheet(workbook, "No Action", reportedList);
-
-            try (FileOutputStream fileOut = new FileOutputStream(excelFilePath)) {
-                workbook.write(fileOut);
-                logger.info("Report generated: " + excelFilePath);
+            } catch (IOException e) {
+                logger.error("Error reading CSV file", e);
             }
 
-        } catch (IOException e) {
-            logger.error("Error writing Excel file", e);
+            // System.out.println("Email Sent: " + count_sent);
+            // System.out.println("Email Bounced: " + count_bounced);
+            System.out.println("Email Delivered: " + (count_sent - count_bounced));
+            System.out.println("Clicked: " + count_clicked + " (%" + String.format("%.2f", 100.0*46.0/817) + ")");
+            System.out.println("Reported: " + count_reported + " (Should manually add # of users reported via MS)");
+            System.out.println("No Action: " + count_no_action + " (Should manually subtract # of users reported via MS)");
+
+            try (Workbook workbook = new XSSFWorkbook()) {
+                createSheet(workbook, "Clicked", clickedList);
+                createSheet(workbook, "Reported", reportedList);
+                createSheet(workbook, "No Action", reportedList);
+
+                try (FileOutputStream fileOut = new FileOutputStream(excelFilePath)) {
+                    workbook.write(fileOut);
+                    logger.info("Report generated: " + excelFilePath);
+                }
+
+            } catch (IOException e) {
+                logger.error("Error writing Excel file", e);
+            }
+        } catch (InputMismatchException e) {
+            logger.error("Invalid input provided", e);
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
         }
     }
 
