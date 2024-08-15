@@ -34,7 +34,7 @@ public class App {
             logger.info("Enter the path to the CSV file:");
             String csvFilePath = scanner.nextLine();
             // String csvFilePath = "Phishing-Report-Generator\\report-generator\\deleteme.csv";
-            String excelFilePath = "phishing_report.xlsx";
+            String excelFilePath = "auto_flitered_report.xlsx";
 
             List<Employee> clickedList = new ArrayList<>();
             List<Employee> reportedList = new ArrayList<>();
@@ -72,7 +72,7 @@ public class App {
                             clickedList.add(employee);
                             count_clicked++;
                         }
-                        if (reported) {
+                        if (!click && reported) {
                             reportedList.add(employee);
                             count_reported++;
                         }
@@ -89,14 +89,14 @@ public class App {
             // System.out.println("Email Sent: " + count_sent);
             // System.out.println("Email Bounced: " + count_bounced);
             System.out.println("Email Delivered: " + (count_sent - count_bounced));
-            System.out.println("Clicked: " + count_clicked + " (%" + String.format("%.2f", 100.0*46.0/817) + ")");
+            System.out.println("Clicked Link: " + count_clicked + " (%" + String.format("%.2f", 100.0*46.0/817) + ")");
             System.out.println("Reported: " + count_reported + " (Should manually add # of users reported via MS)");
             System.out.println("No Action: " + count_no_action + " (Should manually subtract # of users reported via MS)");
 
             try (Workbook workbook = new XSSFWorkbook()) {
                 createSheet(workbook, "Clicked", clickedList);
                 createSheet(workbook, "Reported", reportedList);
-                createSheet(workbook, "No Action", reportedList);
+                createSheet(workbook, "No Action", noActionList);
 
                 try (FileOutputStream fileOut = new FileOutputStream(excelFilePath)) {
                     workbook.write(fileOut);
